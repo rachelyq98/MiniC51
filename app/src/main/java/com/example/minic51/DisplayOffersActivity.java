@@ -6,6 +6,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ProgressBar;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -27,32 +31,63 @@ import okhttp3.Response;
 
 public class DisplayOffersActivity extends AppCompatActivity {
 
-    private String url;
     private RecyclerView recyclerView;
     private OffersAdapter offerAdapter;
+    private ProgressBar progressBar;
+    private Button backToLoginButton;
 
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.offers_list);
-        Intent intent = getIntent();
+
+        progressBar = (ProgressBar) findViewById(R.id.progress_bar);
+        backToLoginButton = (Button) findViewById(R.id.back_to_login);
+        DisplayOffersActivity.this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                backToLoginButton.setVisibility(View.GONE);
+            }
+        });
+
+        final Intent intent = getIntent();
         String user = intent.getStringExtra(LoginPageActivity.USER_NAME);
         String password = intent.getStringExtra(LoginPageActivity.PASSWORD);
         LoginAPI login = new LoginAPI(user, password);
-        this.url = login.getURL();
-        offerAdapter = new OffersAdapter(this);
         recyclerView = (RecyclerView) findViewById(R.id.offer_recycler_view);
-        recyclerView.setAdapter(offerAdapter);
-        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
-        recyclerView.setLayoutManager(layoutManager);
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
-        try {
-            run();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        login.getURL(new LoginAPI.UrlCallback() {
+            @Override
+            public void onSuccess(String url) {
+                try {
+                    run(url);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                e.printStackTrace();
+                DisplayOffersActivity.this.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        progressBar.setVisibility(View.GONE);
+                        backToLoginButton.setVisibility(View.VISIBLE);
+                    }
+                });
+            }
+        });
     }
 
-    private void run() throws IOException {
+    public void backToLogin (View view){
+        Intent newIntent = new Intent (this, LoginPageActivity.class);
+        startActivity (newIntent);
+    }
+
+
+    private void run(final String url) throws IOException {
+
+        Log.i(DisplayOffersActivity.class.getSimpleName(), url);
+
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
                 .url(url)
@@ -81,6 +116,12 @@ public class DisplayOffersActivity extends AppCompatActivity {
                     DisplayOffersActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
+                            progressBar.setVisibility(View.GONE);
+                            offerAdapter = new OffersAdapter(DisplayOffersActivity.this);
+                            recyclerView.setAdapter(offerAdapter);
+                            RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
+                            recyclerView.setLayoutManager(layoutManager);
+                            recyclerView.setItemAnimator(new DefaultItemAnimator());
                             offerAdapter.setOffers(offersList);
                         }
                     });

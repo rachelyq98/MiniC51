@@ -1,6 +1,5 @@
 package com.example.minic51;
 
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -20,30 +19,44 @@ import okhttp3.Response;
 
 public class LoginAPI{
 
+    private interface UserInfoCallBack {
+
+        void onSuccess(String authToken, String userId);
+        void onFailure(Exception e);
+    }
+
+    public interface UrlCallback {
+
+        void onSuccess(String url);
+        void onFailure(Exception e);
+    }
+
     private String userUrl;
-    private String authToken;
-    private String userId;
-    private String url;
     private String username;
     private String password;
-    private String valid;
 
     public LoginAPI (String username, String password){
         this.username = username;
         this.password = password;
-        this.authToken="";
-        this.userId="";
-        this.url="";
         this.userUrl="";
     }
 
-    public String getURL (){
-        getUserInfo();
-        url = "https://public-api.checkout51.com/v1/getOffers?page=1&platform=android&uuid=42e681ac-da61-4bc2-911f-79f5183745cb&token_version=2&authtoken=" + authToken + "&user_id=" + userId;
-        return url;
+    public void getURL (final UrlCallback callback){
+        getUserInfo(new UserInfoCallBack() {
+            @Override
+            public void onSuccess(String authToken, String userId) {
+                String url = "https://public-api.checkout51.com/v1/getOffers?page=1&platform=android&uuid=42e681ac-da61-4bc2-911f-79f5183745cb&token_version=2&authtoken=" + authToken + "&user_id=" + userId;
+                callback.onSuccess(url);
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                callback.onFailure(e);
+            }
+        });
     }
 
-    private void getUserInfo (){
+    private void getUserInfo (final UserInfoCallBack callback){
         try {
             String encodedPassword = URLEncoder.encode(password, "UTF-8");
             String encodedUser = URLEncoder.encode(username, "UTF-8");
@@ -53,13 +66,14 @@ public class LoginAPI{
         }
 
         try {
-            runUserInfo();
+            runUserInfo(callback);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void runUserInfo () throws  IOException{
+    private void runUserInfo (final UserInfoCallBack callback) throws  IOException{
+
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder()
                 .url(userUrl)
@@ -75,13 +89,20 @@ public class LoginAPI{
                 final String jsonUserData = response.body().string();
                 try {
                     JSONObject user = new JSONObject(jsonUserData);
-                    valid = user.get("status").toString();
+                    String valid = user.get("status").toString();
                     if (valid.equalsIgnoreCase("login_success")){
-                        authToken = user.getString("token").toString();
-                        userId = user.getString("user_id").toString();
+                        String authToken = user.getString("token");
+                        String userId = user.getString("user_id");
+
+                        callback.onSuccess(authToken, userId);
+                    } else {
+
+                        callback.onFailure(new Exception("Login Failure"));
                     }
                 } catch (JSONException e) {
                     e.printStackTrace();
+
+                    callback.onFailure(e);
                 }
             }
         });

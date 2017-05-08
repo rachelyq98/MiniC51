@@ -6,6 +6,23 @@
     tools:showIn="@layout/offers_list"
     tools:context="com.example.minic51.DisplayOffersActivity">
 
+    <ProgressBar
+        android:id="@+id/progress_bar"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:layout_centerVertical="true"
+        android:layout_centerHorizontal="true"
+        />
+
+    <Button
+        android:text="Back to Login"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_below="@id/progress_bar"
+        android:onClick="backToLogin"
+        android:id="@+id/back_to_login"
+        />
     <android.support.v7.widget.RecyclerView
         android:id="@+id/offer_recycler_view"
         android:layout_width="match_parent"

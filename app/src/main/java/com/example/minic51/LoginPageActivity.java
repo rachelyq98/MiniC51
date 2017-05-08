@@ -21,8 +21,8 @@ public class LoginPageActivity extends AppCompatActivity {
         Intent intent = new Intent(this, DisplayOffersActivity.class);
         EditText userEntry = (EditText)findViewById(R.id.nameEntry);
         EditText passwordEntry = (EditText) findViewById(R.id.passwordEntry);
-        String user = userEntry.toString();
-        String password = passwordEntry.toString();
+        String user = userEntry.getText().toString();
+        String password = passwordEntry.getText().toString();
         intent.putExtra(USER_NAME, user);
         intent.putExtra(PASSWORD, password);
         startActivity (intent);
